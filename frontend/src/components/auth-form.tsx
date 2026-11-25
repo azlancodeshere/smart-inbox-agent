@@ -54,15 +54,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setError(null);
     setLoading(true);
     try {
-      // Base URL of the Express API (register/login live there, in req.body).
+
       const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
       if (isSignup) {
-        // ① REGISTER — Express handles validation + bcrypt (routes/auth.ts)
+
         const res = await fetch(`${API}/api/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // required: cross-origin Set-Cookie (3000 → 4000)
+          credentials: "include",
           body: JSON.stringify({ name, email, password }),
         });
         const data = await res.json().catch(() => ({}));
@@ -71,12 +71,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
           return;
         }
       } else {
-        // ① LOGIN — Express checks the bcrypt hash AND issues the
-        //    accessToken/refreshToken pair as httpOnly cookies.
         const res = await fetch(`${API}/api/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // required: cross-origin Set-Cookie (3000 → 4000)
+          credentials: "include",
           body: JSON.stringify({ email, password }),
         });
         const data = await res.json().catch(() => ({}));
@@ -86,15 +84,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
         }
       }
 
-      // ② Mint the Auth.js session cookie — this is what unlocks the dashboard.
       const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) {
-        // Signed up but auto sign-in failed — send them to the sign-in page.
         router.push("/login");
         return;
       }
 
-      // Session cookie is set → go to the protected page.
       router.push("/dashboard");
       router.refresh();
     } catch {

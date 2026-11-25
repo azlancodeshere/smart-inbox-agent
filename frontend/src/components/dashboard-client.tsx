@@ -30,7 +30,7 @@ export function DashboardClient({ user }: { user: User }) {
 
     (async () => {
       try {
-        // 1. Get the Auth.js session JWT from Next.js.
+
         const tokenRes = await fetch("/api/session/token");
         if (!tokenRes.ok) {
           if (!cancelled) setStatus("error");
@@ -38,8 +38,7 @@ export function DashboardClient({ user }: { user: User }) {
         }
         const { token } = (await tokenRes.json()) as { token: string };
 
-        // 2. Call the protected Express endpoint with it.
-        const res = await fetch(`${API_URL}/api/me`, {
+const res = await fetch(`${API_URL}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -78,7 +77,6 @@ export function DashboardClient({ user }: { user: User }) {
         </h2>
         <div className="mt-3 flex items-center gap-4">
           {user.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={user.image}
               alt={user.name ?? "avatar"}

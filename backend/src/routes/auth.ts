@@ -12,11 +12,6 @@ const router = Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * REGISTER — POST /api/register
- * Body: { name, email, password }
- * (Logic ported 1:1 from the old Next.js /api/signup route.)
- */
 router.post("/register", async (req, res) => {
   try {
     const body = (req.body ?? {}) as Record<string, unknown>;
@@ -45,9 +40,8 @@ router.post("/register", async (req, res) => {
 
     return res.status(201).json({ ok: true, userId: user.id });
   } catch (err) {
-    // Race: two requests can both pass the `findUnique` check above; the DB's
-    // unique index on `email` then rejects the second insert (P2002).
-    if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
+
+if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
       return res.status(409).json({ error: "An account with this email already exists" });
     }
     console.error(err);
@@ -55,12 +49,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-/**
- * LOGIN — POST /api/login
- * Body: { email, password }
- * Returns the user on success (no session token here — Auth.js still mints
- * the session cookie; this endpoint is the credentials check itself).
- */
 router.post("/login", async (req, res) => {
   try {
     const body = (req.body ?? {}) as Record<string, unknown>;
@@ -82,8 +70,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // Issue the access + refresh token pair (also set as httpOnly cookies).
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user.id);
+const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user.id);
 
     return res
       .cookie("accessToken", accessToken, tokenCookieOptions)
@@ -91,7 +78,7 @@ router.post("/login", async (req, res) => {
       .json({
         ok: true,
         user: { id: user.id, name: user.name, email: user.email },
-        accessToken, // also in the body, for non-browser clients
+        accessToken, 
         refreshToken,
       });
   } catch (err) {
@@ -104,14 +91,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/**
- * REFRESH — POST /api/refresh
- * Body or cookie: { refreshToken }
- *
- * Verifies the JWT, then checks it against the refresh token stored on the
- * user row — a mismatch (already rotated / stolen) is a 401. On success a
- * NEW pair is issued and the old refresh token dies (rotation).
- */
 router.post("/refresh", async (req, res) => {
   try {
     const incoming = req.cookies?.refreshToken || req.body?.refreshToken;
@@ -145,11 +124,6 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
-/**
- * LOGOUT — POST /api/logout
- * Clears both cookies AND nulls the stored refresh token server-side, so a
- * copy of the token taken before logout stops working too.
- */
 router.post("/logout", async (req, res) => {
   try {
     const incoming = req.cookies?.refreshToken;
@@ -163,7 +137,7 @@ router.post("/logout", async (req, res) => {
       }
     }
   } catch (err) {
-    console.error(err); // best-effort — the cookies are cleared either way
+    console.error(err); 
   }
 
   return res

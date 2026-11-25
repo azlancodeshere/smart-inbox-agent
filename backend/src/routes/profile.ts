@@ -4,12 +4,10 @@ import prisma from "../lib/prisma";
 
 const router = Router();
 
-// Public: liveness probe
 router.get("/ping", (_req, res) => {
   res.json({ ok: true, now: new Date().toISOString() });
 });
 
-// Protected: returns the authenticated user's profile
 router.get("/me", requireAuth, async (req, res) => {
   try {
     const userId = req.user?.id;

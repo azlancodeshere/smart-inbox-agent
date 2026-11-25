@@ -7,11 +7,11 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  // Persists users + OAuth accounts to PostgreSQL.
+  
   adapter: PrismaAdapter(prisma),
-  // JWT sessions so the separate Express API can verify the token directly.
+  
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" }, // Auth.js redirects here when a session is required
+  pages: { signIn: "/login" }, 
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -45,12 +45,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    // Persist the user id on the JWT so it survives across requests.
+    
     jwt({ token, user }) {
       if (user) token.id = user.id;
       return token;
     },
-    // Expose the user id on the session object.
+    
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string;
       return session;

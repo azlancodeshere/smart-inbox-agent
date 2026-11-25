@@ -1,4 +1,4 @@
-import "dotenv/config"; // must be first: loads DATABASE_URL / AUTH_SECRET / PORT
+import "dotenv/config";
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -12,27 +12,22 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3000";
 
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
-app.use(cookieParser()); // req.cookies — for the accessToken / refreshToken pair
+app.use(cookieParser());
 
-// Liveness probe (no auth, no DB)
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "assign-backend" });
 });
 
-app.use("/api", authRouter); // POST /api/register, POST /api/login (req.body)
+app.use("/api", authRouter);
 app.use("/api", profileRouter);
 
-// 404
 app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
 
-// Central error handler (must be last, must accept 4 args for Express to
-// treat it as an error middleware)
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  // express.json() throws on a malformed body — that's a client error (400),
-  // not a server error (500).
-  if (err instanceof SyntaxError || (err as { type?: string }).type === "entity.parse.failed") {
+
+if (err instanceof SyntaxError || (err as { type?: string }).type === "entity.parse.failed") {
     return res.status(400).json({ error: "Invalid JSON body" });
   }
   console.error(err);
@@ -51,7 +46,6 @@ app.listen(PORT, async () => {
   console.log(`✔ API listening on http://localhost:${PORT}`);
 });
 
-// Close the pool cleanly on shutdown (tsx watch restarts, Ctrl+C, deploy)
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     await prisma.$disconnect().catch(() => {});

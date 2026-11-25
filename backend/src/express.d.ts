@@ -1,4 +1,3 @@
-// Adds `req.user` to Express requests (populated by the requireAuth middleware).
 declare global {
   namespace Express {
     interface Request {
