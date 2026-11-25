@@ -1,0 +1,80 @@
+// ---------------------------------------------------------------------------
+// SINGLE SOURCE OF TRUTH — lives in backend/, shared with the frontend.
+//
+//   • Edit this file once when you change the data model.
+//   • `npx prisma generate` emits a client into BOTH apps (two generators).
+//   • Migrations live in ./migrations next to this file (backend owns them).
+//   • The frontend's prisma.config.ts points here:
+//         schema: "../backend/prisma/schema.prisma"
+//   • The frontend has NO prisma/ folder of its own.
+//
+// The connection `url` is NOT here — in Prisma 7 it lives in each app's
+// prisma.config.ts (read from its own .env).
+// ---------------------------------------------------------------------------
+
+generator backend {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+generator frontend {
+  provider            = "prisma-client"
+  output              = "../../frontend/src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  // Only set for credentials (email/password) auth. OAuth users have no password.
+  password      String?
+  // Latest refresh token (plaintext, like the classic pattern) — rotated on
+  // every /api/refresh so a stolen token stops working after one use.
+  refreshToken  String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
