@@ -1,0 +1,49 @@
+name: smart-inbox-agent
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: assign_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d assign_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      # container-internal URL overrides whatever is in backend/.env
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/assign_db?schema=public
+      PORT: "4000"
+      # browser origin, so it stays localhost
+      CLIENT_ORIGIN: http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    env_file: ./frontend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/assign_db?schema=public
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      AUTH_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - api
+
+volumes:
+  pgdata:
