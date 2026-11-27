@@ -1,6 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma";
+import { requireAuth } from "../middleware/auth";
 import {
   generateAccessAndRefreshTokens,
   refreshTokenMatches,
@@ -144,6 +145,29 @@ router.post("/logout", async (req, res) => {
     .clearCookie("accessToken", tokenCookieOptions)
     .clearCookie("refreshToken", tokenCookieOptions)
     .json({ ok: true });
+});
+
+router.get("/me", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, image: true, createdAt: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    return res.json({ user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
 });
 
 export default router;
