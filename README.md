@@ -116,6 +116,30 @@ Open **http://localhost:3000** and sign up.
 > If port 3000 is already in use, Next.js automatically picks the next free
 > port (e.g. 3001) and prints it. See [Notes](#notes) for what that means for OAuth.
 
+### 6. Or run everything with Docker
+
+```bash
+docker compose up --build     # from the repo root
+```
+
+| Service | File | URL |
+|---|---|---|
+| **web** | `frontend/Dockerfile` (standalone Next.js, context = repo root) | <http://localhost:3000> |
+| **api** | `backend/Dockerfile` (multi-stage, runs `prisma migrate deploy` on boot) | <http://localhost:4000> |
+| **db** | `postgres:16-alpine` | internal only |
+
+- Your `.env` files are read with `env_file:` and are excluded from both build
+  contexts by `backend/.dockerignore` and the root `.dockerignore` — no secrets
+  in images.
+- The compose file overrides `DATABASE_URL` to the `db` service (delete that
+  override in `docker-compose.yml` to keep using Neon instead).
+- Migrations run at startup, so the very first `up` creates every table.
+
+```bash
+docker compose logs -f api    # watch migrations + API
+docker compose down -v        # stop and drop the database volume
+```
+
 ---
 
 ## OAuth providers (Google & GitHub)
@@ -226,7 +250,12 @@ from PostgreSQL, so renames and avatar updates show up immediately.
 
 ```
 .
+├── docker-compose.yml            postgres + api + web in one command
+├── .dockerignore                 keeps node_modules/.next/.env out of build contexts
+│
 ├── backend/                     TypeScript Express API — owns the DB schema
+│   ├── Dockerfile                multi-stage image (deps → prisma generate → runtime)
+│   ├── .dockerignore
 │   ├── prisma/                  ⭐ SINGLE SOURCE OF TRUTH (frontend has none)
 │   │   ├── schema.prisma        ← edit this once when the data model changes
 │   │   └── migrations/          ← migration history lives here
@@ -243,6 +272,7 @@ from PostgreSQL, so renames and avatar updates show up immediately.
 │       └── generated/prisma/    ← prisma generate output (git-ignored)
 │
 └── frontend/                    Next.js app (no prisma/ folder)
+    ├── Dockerfile                standalone image (built from the repo root)
     ├── prisma.config.ts         ← points at ../backend/prisma/schema.prisma
     └── src/
         ├── auth.ts              Auth.js config (providers, adapter, JWT callbacks)
