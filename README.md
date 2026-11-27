@@ -196,6 +196,18 @@ POST /api/logout    clears both cookies AND nulls User.refreshToken
 Rotation means a stolen refresh token dies after **one** use — the copy in
 the DB is replaced the moment a new pair is issued.
 
+### Current user
+
+```
+GET /api/me            cookie: accessToken  or  Authorization: Bearer <accessToken>
+  → requireAuth verifies the token (our JWT, else Auth.js session) → req.user
+  → 200 { user: { id, name, email, image, createdAt } }
+  → 401 when the token is missing, invalid, or points to a deleted user
+```
+
+The dashboard calls it on mount to know *who* is signed in; the row is re-read
+from PostgreSQL, so renames and avatar updates show up immediately.
+
 ### Route protection
 
 - `frontend/src/proxy.ts` (Next.js 16's replacement for `middleware.ts`)
@@ -226,8 +238,8 @@ the DB is replaced the moment a new pair is issued.
 │       ├── lib/prisma.ts        shared Prisma client (pg driver adapter)
 │       ├── lib/tokens.ts        generate/verify access + refresh tokens
 │       ├── middleware/auth.ts   verifies accessToken, then Auth.js token
-│       ├── routes/auth.ts       /api/register, /api/login, /api/refresh, /api/logout
-│       ├── routes/profile.ts    /api/ping, /api/me (protected)
+│       ├── routes/auth.ts       /api/register, /api/login, /api/refresh, /api/logout, /api/me (protected)
+│       ├── routes/profile.ts    /api/ping
 │       └── generated/prisma/    ← prisma generate output (git-ignored)
 │
 └── frontend/                    Next.js app (no prisma/ folder)
